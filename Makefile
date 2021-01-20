@@ -1,7 +1,7 @@
 #Author : dlf
 #Time: 2020/12/21
 
-PRJNAME ?= 
+PRJNAME ?= TM8765
 TARGET = testtcpsvr
 CURDIR=$(shell pwd)
 BIN_DIR=$(CURDIR)/bin
