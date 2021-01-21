@@ -46,7 +46,7 @@ CFLAGS += $(foreach dir,$(SUB_INC_DIR),-I$(dir))
 LDFLAGS += -lpthread 
 #LDFLAGS += $(wildcard $(LIB_DIR)/*.a)
 LDFLAGS += -L$(LIB_DIR)
-LDFLAGS += -ludpsvr
+LDFLAGS += -ltcpsvr
 
 export  CFLAGS  LDFLAGS
 
