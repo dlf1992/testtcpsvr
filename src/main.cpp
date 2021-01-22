@@ -22,7 +22,7 @@ static void signal_action(int sig, siginfo_t* info, void* p)
 	struct sigaction act;
 	sigset_t* mask = &act.sa_mask;
 	int n = 0;
-	printf("sig = %d",sig);
+	printf("sig = %d\n",sig);
 	if(11 == sig)
 	{
 		//printf("sig = 11 ........\n");
@@ -153,6 +153,7 @@ int main(int argc,char *argv[])
 		printf("thread worker creat error.\n");
 		return -1;
 	}
+	pthread_detach(tid);
 	while(1)
 	{
 		sleep(5);
