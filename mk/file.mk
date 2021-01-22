@@ -5,12 +5,17 @@ endif
 
 #==================================================
 #
-CFLAGS = -D$(PRJNAME) -D$(CPUTYPE) -D__LINUX__
+ifeq ($(origin PRJNAME), defined)
+	CFLAGS += -D$(PRJNAME)
+endif	# end 
+ifeq ($(origin CPUTYPE), defined)
+	CFLAGS += -D$(CPUTYPE)
+endif	# end 
+CFLAGS +=  -D__LINUX__
 CFLAGS += -g -rdynamic -Wall
 CFLAGS += -fPIC
 CFLAGS += -O2 -fno-strict-aliasing -finline-functions -std=c++11
 CFLAGS += -D_REENTRANT
-CFLAGS += -Werror
 
 CREAT_TIME= $(shell date "+%F %T")
 
