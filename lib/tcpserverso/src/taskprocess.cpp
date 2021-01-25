@@ -80,13 +80,13 @@ int Task::ReadPacket(TRingBuffer *clientbuffer,char* szPacket, int iPackLen)
 
 	int iStartPos = 0;
 	int iStopPos = 0;
-	int packetlen = 0;//数据包中len不包括#### packetlen=len+4 是总长度
+	int packetlen = 0;//数据包中len不包括#### packetlen 是总长度
 	unsigned char ch1;
 	unsigned char ch2;
 	unsigned char ch3;
-	//unsigned char packetlenlow;
-	//unsigned char packetlenhigh;
-	unsigned char packetlen_get;
+	unsigned char packetlenlow;
+	unsigned char packetlenhigh;
+	//unsigned char packetlen_get;
 	
 	if(NULL == clientbuffer)
 		return iRet;
@@ -98,8 +98,8 @@ int Task::ReadPacket(TRingBuffer *clientbuffer,char* szPacket, int iPackLen)
         clientbuffer->Clear();	
 		return iRet;		
 	}
-	////printf("iStartPos = %d\n",iStartPos);
-	////printf("clientbuffer->GetMaxReadSize() = %d\n",clientbuffer->GetMaxReadSize());
+	//printf("iStartPos = %d\n",iStartPos);
+	//printf("clientbuffer->GetMaxReadSize() = %d\n",clientbuffer->GetMaxReadSize());
 	if(clientbuffer->GetMaxReadSize() <= iStartPos+6)
 	{
 		//printf("can not find total protocol.\n");
@@ -121,10 +121,10 @@ int Task::ReadPacket(TRingBuffer *clientbuffer,char* szPacket, int iPackLen)
 		clientbuffer->ThrowSomeData(iStartPos);
 		iStartPos = 0;
 		//数据包长度
-		//clientbuffer->PeekChar(iStartPos+4,packetlenlow);
-		//clientbuffer->PeekChar(iStartPos+5,packetlenhigh);
-		clientbuffer->PeekChar(iStartPos+5,packetlen_get);
-		packetlen = packetlen_get+4;
+		clientbuffer->PeekChar(iStartPos+4,packetlenlow);
+		clientbuffer->PeekChar(iStartPos+5,packetlenhigh);
+		//clientbuffer->PeekChar(iStartPos+5,packetlen_get);
+		packetlen = packetlenlow|(packetlenhigh<<8);
 		//printf("packetlen = %d\n",packetlen);
 		iStopPos = iStartPos+packetlen;
 		if (iStopPos <= clientbuffer->GetMaxReadSize())
@@ -136,6 +136,12 @@ int Task::ReadPacket(TRingBuffer *clientbuffer,char* szPacket, int iPackLen)
 				//m_readBuffer.Clear();
 			}
 		}
+	}
+	else
+	{
+		//长度够，但是不完全符合格式，清空
+		//printf("imcomplete with data format,clear all.\n");
+		clientbuffer->Clear();	
 	}
 
 	return iRet;	
