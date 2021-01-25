@@ -80,7 +80,7 @@ int Task::ReadPacket(TRingBuffer *clientbuffer,char* szPacket, int iPackLen)
 
 	int iStartPos = 0;
 	int iStopPos = 0;
-	int packetlen = 0;//数据包中len不包括#### packetlen 是总长度
+	int packetlen = 0;//packetlen 总长度
 	unsigned char ch1;
 	unsigned char ch2;
 	unsigned char ch3;
@@ -142,6 +142,7 @@ int Task::ReadPacket(TRingBuffer *clientbuffer,char* szPacket, int iPackLen)
 		//长度够，但是不完全符合格式，清空
 		//printf("imcomplete with data format,clear all.\n");
 		clientbuffer->Clear();	
+		return iRet;
 	}
 
 	return iRet;	
