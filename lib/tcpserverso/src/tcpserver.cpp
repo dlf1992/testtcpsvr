@@ -200,8 +200,8 @@ void TcpServer::epoll()
             {
                 char buffer[MAX_BUFFER];
                 readagain:	memset(buffer, 0, sizeof(buffer));
-                int ret = read(fd, buffer, MAX_BUFFER - 1);
-                if(ret == 0)  //某个fd关闭了连接，从Epoll中删除并关闭fd
+                int ret1 = read(fd, buffer, MAX_BUFFER - 1);
+                if(ret1 == 0)  //某个fd关闭了连接，从Epoll中删除并关闭fd
                 {
                     struct epoll_event ev;
                     ev.events = EPOLLIN;
@@ -223,7 +223,7 @@ void TcpServer::epoll()
 					Task::clearRingBuffer(fd);
                     continue;
                 }
-                else if(ret < 0)//读取出错，尝试再次读取
+                else if(ret1 < 0)//读取出错，尝试再次读取
                 {
                     if(errno == EAGAIN)
                     {
@@ -243,9 +243,9 @@ void TcpServer::epoll()
                 }
                 else//成功读取，向线程池中添加任务
                 {
-                    //printf("received data,fd = %d,datalen = %d\n",fd,ret);
+                    //printf("received data,fd = %d,datalen = %d\n",fd,ret1);
 					BaseTask *task = NULL;
-                    task = new Task(buffer,ret,fd);
+                    task = new Task(buffer,ret1,fd);
 					if(NULL == task)
 					{
 						//printf("task=NULL.\n");
