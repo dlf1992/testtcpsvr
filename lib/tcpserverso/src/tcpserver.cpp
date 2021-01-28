@@ -103,19 +103,19 @@ void TcpServer::clearclienttime()
 {
 	activeconnectmaplocker.mutex_lock();
 	map<int,unsigned long>::iterator iter;
-	for(iter=m_activeclient.begin();iter!=m_activeclient.end();iter++)
+	for(iter=m_activeclient.begin();iter!=m_activeclient.end();)
 	{
-		m_activeclient.erase(iter);
+		m_activeclient.erase(iter++);
 	}
 	map<int,unsigned int>::iterator iter1;
-	for(iter1=m_connecttime.begin();iter1!=m_connecttime.end();iter1++)
+	for(iter1=m_connecttime.begin();iter1!=m_connecttime.end();)
 	{
-		m_connecttime.erase(iter1);
+		m_connecttime.erase(iter1++);
 	}
 	map<int,string>::iterator iter2;
-	for(iter2=m_clientinfo.begin();iter2!=m_clientinfo.end();iter2++)
+	for(iter2=m_clientinfo.begin();iter2!=m_clientinfo.end();)
 	{
-		m_clientinfo.erase(iter2);
+		m_clientinfo.erase(iter2++);
 	}	
 	activeconnectmaplocker.mutex_unlock();		
 }

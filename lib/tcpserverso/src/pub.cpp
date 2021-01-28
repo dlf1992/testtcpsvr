@@ -223,14 +223,14 @@ int run_sh_cmd(const char *cmd,char *result)
 		return -1;
 	}
 	ret = fread(cmd_result_buf, sizeof(char),sizeof(cmd_result_buf)-1, pfd1);
-	if(ret < 0)
+	if(ret <= 0)
 	{
 		//printf("read_cpe_config error\n");
 		pclose(pfd1);
 		pfd1 = NULL;
 		return -1;
 	}
-	cmd_result_buf[ret-1] = '\0';
+	//cmd_result_buf[ret-1] = '\0';
 	////printf("cmd_result_buf:%s\n",cmd_result_buf);
 	memcpy(result,cmd_result_buf,strlen(cmd_result_buf));
 	pclose(pfd1);
