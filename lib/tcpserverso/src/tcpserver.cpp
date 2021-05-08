@@ -30,7 +30,37 @@ bool TcpServer::init(unsigned short svrport,ptcpFun callback,pNotifyFun notifyca
     int opt = 1;
     // sockfd为需要端口复用的套接字
     setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (const void *)&opt, sizeof(opt));
+
+	int keepAlive = 1;	  // 非0值，开启keepalive属性
+	int keepIdle = 60;	  // 如该连接在60秒内没有任何数据往来,则进行此TCP层的探测
+	int keepInterval = 5; // 探测发包间隔为5秒
+	int keepCount = 3;		  // 尝试探测的最多次数
+	// 开启探活
 	
+	if(-1 == setsockopt(sockfd, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepAlive, sizeof(keepAlive)))
+	{
+		printf("set socket KEEPALIVE error.\n");
+		close(sockfd);
+		return false;
+	}
+	if(-1 == setsockopt(sockfd, SOL_TCP, TCP_KEEPIDLE, (void*)&keepIdle, sizeof(keepIdle)))
+	{
+		printf("set socket KEEPIDLE error.\n");
+		close(sockfd);
+		return false;
+	}
+	if(-1 == setsockopt(sockfd, SOL_TCP, TCP_KEEPINTVL, (void *)&keepInterval, sizeof(keepInterval)))
+	{
+		printf("set socket KEEPINTVL error.\n");
+		close(sockfd);
+		return false;		
+	}
+	if(-1 == setsockopt(sockfd, SOL_TCP, TCP_KEEPCNT, (void *)&keepCount, sizeof(keepCount)))
+	{
+		printf("set socket KEEPCNT error.\n");
+		close(sockfd);
+		return false;
+	}	
     int ret = bind(sockfd, (struct sockaddr *)&ServerAddr, sizeof(ServerAddr));
     if(ret < 0)
     {
