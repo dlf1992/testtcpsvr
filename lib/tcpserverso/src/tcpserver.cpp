@@ -9,12 +9,19 @@
 * @history:
 *******************************************************************/
 #include "tcpserver.h"
-TcpServer* TcpServer::m_pTcpServer = NULL;
-bool TcpServer::init(unsigned short svrport,ptcpFun callback,pNotifyFun notifycallback)
+
+bool TcpServer::init(unsigned short svrport,ptcpFun callback,pNotifyFun notifycallback,pReadPacketFun readpacket)
 {
 	m_port = svrport;
-	Task::task_callback = callback;
 	m_notifyfunc = notifycallback;
+	pclient_buffer = new CientBuffer(m_port);
+	if(NULL == pclient_buffer)
+	{
+		printf("pclient_buffer NULL,CientBuffer new failed.\n");
+		return false;
+	}
+	pclient_buffer->task_callback = callback;
+	pclient_buffer->read_packet = readpacket;
 	bzero(&ServerAddr, sizeof(ServerAddr));
 	//配置ServerAddr
 	ServerAddr.sin_family = AF_INET;
@@ -250,7 +257,14 @@ void TcpServer::epoll()
 						memcpy(notifydata,&m_eventnotify,sizeof(EVENTNOTIFY));
 						m_notifyfunc(notifydata,sizeof(EVENTNOTIFY));
 					}
-					Task::clearRingBuffer(fd);
+					if(pclient_buffer != NULL)
+					{
+						pclient_buffer->clearRingBuffer(fd);
+					}
+					else
+					{
+						printf("clear fd,pclient_buffer = NULL\n");
+					}
                     continue;
                 }
                 else if(ret1 < 0)//读取出错，尝试再次读取
@@ -275,7 +289,12 @@ void TcpServer::epoll()
                 {
                     //printf("received data,fd = %d,datalen = %d\n",fd,ret1);
 					BaseTask *task = NULL;
-                    task = new Task(buffer,ret1,fd);
+					if(NULL == pclient_buffer)
+					{
+						printf("add task,pclient_buffer = NULL\n");
+						break;
+					}
+                    task = new Task(pclient_buffer,buffer,ret1,fd);
 					if(NULL == task)
 					{
 						//printf("task=NULL.\n");
@@ -320,7 +339,10 @@ void TcpServer::disconnect(int fd)
 		memcpy(notifydata,&m_eventnotify,sizeof(EVENTNOTIFY));
 		m_notifyfunc(notifydata,sizeof(EVENTNOTIFY));
 	}	
-	Task::clearRingBuffer(fd);
+	if(pclient_buffer != NULL)
+	{
+		pclient_buffer->clearRingBuffer(fd);
+	}
     //printf("%d logout\n", fd);
 }
 void TcpServer::stoppool()

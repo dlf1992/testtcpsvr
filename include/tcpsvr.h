@@ -9,14 +9,16 @@
 //#include <iostream>
 //#include <map>
 //using namespace std;
- 
+#include "RingBuffer.h"
+
 #ifdef __cplusplus
 extern "C"  //C++
 {
 #endif
 typedef  int (*ptcpFun)(const char *,int,int);
 typedef  int (*pNotifyFun)(const char *,int);
-int StartTCPService(unsigned short svrport,ptcpFun Callback,pNotifyFun notifyCallback);
+typedef  int (*pReadPacketFun)(TRingBuffer*,char*,int);
+int StartTCPService(unsigned short svrport,ptcpFun Callback,pNotifyFun notifyCallback,pReadPacketFun readpacket);
 #ifdef __cplusplus
 }
 #endif

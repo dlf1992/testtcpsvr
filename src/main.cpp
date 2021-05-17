@@ -13,6 +13,8 @@
 
 using namespace std;
 #define TCPSVRPORT 8888
+#define TCPSVRPORT1 5555
+
 #define MAKESHORT(a,b) ((a&0xff)|((b&0xff)<<8))
 #define MAKEINT(a,b,c,d) ((a&0xff)|((b&0xff)<<8)|((c&0xff)<<16)|((d&0xff)<<24))
 
@@ -108,7 +110,7 @@ void signal_Init(void)
 }
 static int dealdata(const char* data,int datalen,int fd)
 {
-	printf("datalen = %d,fd = %d\n",datalen,fd);
+	printf("dealdata,datalen = %d,fd = %d\n",datalen,fd);
 	for(int i=0;i<datalen;i++)
 	{
 		 printf("0x%02x ",*(data+i));
@@ -117,7 +119,7 @@ static int dealdata(const char* data,int datalen,int fd)
 	int sendlen = write(fd,data,datalen);
 	if(sendlen < 0)
 	{
-		printf("send error.\n");
+		printf("dealdata,send error.\n");
 	}
 	return 0;
 }
@@ -134,26 +136,149 @@ static int dealnotify(const char* data, int datalen)
 	fd = MAKEINT(*(data+4),*(data+5),*(data+6),*(data+7));
 	memset(client,0,sizeof(client));
 	memcpy(client,data+8,sizeof(client));
-	printf("eventnotify:cmd = %d,fd = %d,client = %s\n",cmd,fd,client);
+	printf("dealdata,eventnotify:cmd = %d,fd = %d,client = %s\n",cmd,fd,client);
 	return 0;
 
 }
+static int dealdata1(const char* data,int datalen,int fd)
+{
+	printf("dealdata1,datalen = %d,fd = %d\n",datalen,fd);
+	for(int i=0;i<datalen;i++)
+	{
+		 printf("0x%02x ",*(data+i));
+	}
+	printf("\n");
+	int sendlen = write(fd,data,datalen);
+	if(sendlen < 0)
+	{
+		printf("dealdata1,send error.\n");
+	}
+	return 0;
+}
+static int dealnotify1(const char* data, int datalen)
+{
+	//固定40字节
+	if(datalen != 40)
+	{
+		return -1;
+	}
+	int cmd,fd;
+	char client[32];
+	cmd = MAKEINT(*(data),*(data+1),*(data+2),*(data+3));
+	fd = MAKEINT(*(data+4),*(data+5),*(data+6),*(data+7));
+	memset(client,0,sizeof(client));
+	memcpy(client,data+8,sizeof(client));
+	printf("dealnotify1,eventnotify:cmd = %d,fd = %d,client = %s\n",cmd,fd,client);
+	return 0;
+}
+
+static int ReadPacket(TRingBuffer *clientbuffer,char* szPacket, int iPackLen)
+{
+	int iRet = 0;
+
+	int iStartPos = 0;
+	int iStopPos = 0;
+	int packetlen = 0;//packetlen 总长度
+	unsigned char ch1;
+	unsigned char ch2;
+	unsigned char ch3;
+	unsigned char packetlenlow;
+	unsigned char packetlenhigh;
+	//unsigned char packetlen_get;
+	
+	if(NULL == clientbuffer)
+		return iRet;
+
+	if (!clientbuffer->FindChar(0x23, iStartPos)) //find #
+	{
+        //0x23都查找不到 肯定是无效数据 清空
+		//printf("can not find #,clear ringbuffer.\n");
+        clientbuffer->Clear();	
+		return iRet;		
+	}
+	//printf("iStartPos = %d\n",iStartPos);
+	//printf("clientbuffer->GetMaxReadSize() = %d\n",clientbuffer->GetMaxReadSize());
+	if(clientbuffer->GetMaxReadSize() <= iStartPos+6)
+	{
+		//printf("can not find total protocol.\n");
+		//丢弃#前面的数据
+		clientbuffer->ThrowSomeData(iStartPos);
+		return iRet;
+	}
+	
+	if((!clientbuffer->PeekChar(iStartPos+1,ch1))\
+		||(!clientbuffer->PeekChar(iStartPos+2,ch2))\
+		||(!clientbuffer->PeekChar(iStartPos+3,ch3)))
+	{
+		//printf("can not find char.\n");
+		return iRet;
+	}
+	if((ch1==0x23)&&(ch2==0x23)&&(ch3==0x23))
+	{
+		//丢弃#前面的数据
+		clientbuffer->ThrowSomeData(iStartPos);
+		iStartPos = 0;
+		//数据包长度
+		clientbuffer->PeekChar(iStartPos+4,packetlenlow);
+		clientbuffer->PeekChar(iStartPos+5,packetlenhigh);
+		//clientbuffer->PeekChar(iStartPos+5,packetlen_get);
+		packetlen = packetlenlow|(packetlenhigh<<8);
+		//printf("packetlen = %d\n",packetlen);
+		if(packetlen > 2048)
+		{
+			//处理异常数据
+			clientbuffer->Clear();	
+			return iRet;
+		}
+		iStopPos = iStartPos+packetlen;
+		if (iStopPos <= clientbuffer->GetMaxReadSize())
+		{
+			if (iStopPos > iPackLen) clientbuffer->ThrowSomeData(iStopPos); //数据超长，丢弃
+			else if (clientbuffer->ReadBinary((uint8*)szPacket, iStopPos))
+			{
+				iRet = packetlen;
+				//m_readBuffer.Clear();
+			}
+		}
+	}
+	else
+	{
+		//长度够，但是不完全符合格式，清空
+		//printf("imcomplete with data format,clear all.\n");
+		clientbuffer->Clear();	
+		return iRet;
+	}
+
+	return iRet;	
+}
 static void *worker(void *arg)
 {
-	StartTCPService(TCPSVRPORT,dealdata,dealnotify);
+	StartTCPService(TCPSVRPORT,dealdata,dealnotify,ReadPacket);
 	return NULL;
 }
+static void *worker1(void *arg)
+{
+	StartTCPService(TCPSVRPORT1,dealdata1,dealnotify1,ReadPacket);
+	return NULL;
+}
+
 int main(int argc,char *argv[])
 {	
 	//信号初始化
 	signal_Init();
-	pthread_t tid;
+	pthread_t tid,tid1;
 	if(pthread_create(&tid, NULL, worker, NULL) != 0)
 	{
 		printf("thread worker creat error.\n");
 		return -1;
 	}
 	pthread_detach(tid);
+	if(pthread_create(&tid1, NULL, worker1, NULL) != 0)
+	{
+		printf("thread worker1 creat error.\n");
+		return -1;
+	}
+	pthread_detach(tid1);	
 	while(1)
 	{
 		sleep(5);

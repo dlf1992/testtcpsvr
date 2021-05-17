@@ -30,6 +30,7 @@
 #include "thread_pool.h"
 #include "taskprocess.h"
 #include "pub.h"
+#include "clientbuffer.h"
 
 using namespace std;
 
@@ -45,7 +46,6 @@ typedef  int (*pNotifyFun)(const char *,int);
 class TcpServer
 {
 private:
-	static TcpServer*  m_pTcpServer; 
 	bool is_stop;   //是否停止epoll_wait的标志
 	int threadnum;   //线程数目
 	int sockfd;     //监听的fd
@@ -60,23 +60,11 @@ private:
 	mutex_locker activeconnectmaplocker;	//上面map的互斥锁
 	EVENTNOTIFY m_eventnotify;
 	pNotifyFun m_notifyfunc;//客户端连接断开事件通知函数
-	class CGarbo //在析构函数中删除单例
-    {
-        public:
-            ~CGarbo()
-            {
-                if(TcpServer::m_pTcpServer != NULL)
-                {
-					delete TcpServer::m_pTcpServer;
-					TcpServer::m_pTcpServer = NULL;
-				}
-            }
-     };
-     static CGarbo Garbo; //定义一个静态成员，程序结束时，系统会自动调用它的析构函数				
+	CientBuffer *pclient_buffer;//客户端数据缓冲区类指针对象				
 public://构造函数
 	TcpServer()
 	{}
-	TcpServer(int thread) : is_stop(false) , threadnum(thread) , pool(NULL),m_notifyfunc(NULL)
+	TcpServer(int thread) : is_stop(false) , threadnum(thread) , pool(NULL),m_notifyfunc(NULL),pclient_buffer(NULL)
 	{
 	}
 	~TcpServer()  //析构
@@ -88,24 +76,13 @@ public://构造函数
 			delete pool;
 			pool = NULL;
 		}
-	}
-	static TcpServer* GetInstance()
-	{
-		if (NULL == m_pTcpServer) 
+		if(pclient_buffer != NULL)
 		{
-			m_pTcpServer = new TcpServer(THREAD_NUM);
+			delete pclient_buffer;
+			pclient_buffer = NULL;
 		}
-		return m_pTcpServer;		
 	}
-	static void Destroy()
-	{
-		if(m_pTcpServer != NULL)
-		{
-			delete m_pTcpServer;
-			m_pTcpServer = NULL;
-		}
-	}	
-	bool init(unsigned short svrport,ptcpFun callback,pNotifyFun notifycallback);
+	bool init(unsigned short svrport,ptcpFun callback,pNotifyFun notifycallback,pReadPacketFun readpacket);
 	void epoll();
     bool startpool();
 	void addclienttime(int fd,const char* clientinfo);
