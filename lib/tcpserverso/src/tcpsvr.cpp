@@ -41,12 +41,15 @@ void clearptr(unsigned short port)
 	iter = svr_map.find(port);
 	if(iter != svr_map.end())
 	{
-		//printf("svraddr exist\n");
+		printf("svraddr exist\n");
 		ptcpsvr = iter->second;
 		//printf("pfac = %p\n",pfac);
 		svr_map.erase(iter);
-		delete ptcpsvr;
-		ptcpsvr = NULL;
+		if(ptcpsvr != NULL)
+		{
+			delete ptcpsvr;
+			ptcpsvr = NULL;
+		}
 		//printf("---------------\n");
 	}
 	else
@@ -80,12 +83,9 @@ int StartTCPService(unsigned short svrport,ptcpFun Callback,pNotifyFun notifyCal
 	}
 	else
 	{
-		//printf("TcpServer init failed.\n");
-		if(ptcpserver != NULL)
-		{
-			delete ptcpserver;
-			ptcpserver = NULL;
-		}
+		printf("TcpServer init failed.\n");
+		clearptr(svrport);
+		ptcpserver = NULL;
 		return -1;		
 	}
 	return 0;

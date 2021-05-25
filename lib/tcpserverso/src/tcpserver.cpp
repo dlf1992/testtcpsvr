@@ -31,7 +31,7 @@ bool TcpServer::init(unsigned short svrport,ptcpFun callback,pNotifyFun notifyca
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if(sockfd < 0)
     {
-        //printf("TcpServer socket init error\n");
+        printf("TcpServer socket init error\n");
         return false;
     }
     int opt = 1;
@@ -71,20 +71,20 @@ bool TcpServer::init(unsigned short svrport,ptcpFun callback,pNotifyFun notifyca
     int ret = bind(sockfd, (struct sockaddr *)&ServerAddr, sizeof(ServerAddr));
     if(ret < 0)
     {
-        //printf("TcpServer bind init error\n");
+        printf("TcpServer bind init error\n");
         return false;
     }
     ret = listen(sockfd, 10);
     if(ret < 0)
     {
-        //printf("TcpServer listen init error\n");
+        printf("TcpServer listen init error\n");
         return false;
     }
     //create Epoll
     epollfd = epoll_create(1024);
     if(epollfd < 0)
     {
-        //printf("TcpServer epoll_create init error\n");
+        printf("TcpServer epoll_create init error\n");
         return false;
     }
 	//printf("TcpServer init success.\n");
