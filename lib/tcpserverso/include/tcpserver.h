@@ -55,7 +55,7 @@ private:
 	epoll_event events[MAX_EVENT];  //epoll的events数组
 	struct sockaddr_in ServerAddr;   //绑定的sockaddr
 	map<int,unsigned long> m_activeclient; //map存储收到客户端信息时间戳
-	map<int,unsigned int> m_connecttime;    //存储客户端初次连接时间
+	map<int,unsigned long> m_connecttime;    //存储客户端初次连接时间
 	map<int,string> m_clientinfo;			//存储客户端信息fd ip:port
 	mutex_locker activeconnectmaplocker;	//上面map的互斥锁
 	EVENTNOTIFY m_eventnotify;
@@ -93,7 +93,8 @@ public://构造函数
     void disconnect(int fd);
 	void stoppool();
 	int  senddata(int fd,const char *data,int datalen);
-
+	unsigned long getclienttime(int fd);
+	
 	static int setnonblocking(int fd)  //将fd设置称非阻塞
 	{
 		int old_option = fcntl(fd, F_GETFL);

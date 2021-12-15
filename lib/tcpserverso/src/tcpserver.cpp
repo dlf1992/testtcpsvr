@@ -72,12 +72,14 @@ bool TcpServer::init(unsigned short svrport,ptcpFun callback,pNotifyFun notifyca
     if(ret < 0)
     {
         printf("TcpServer bind init error\n");
+        close(sockfd);
         return false;
     }
     ret = listen(sockfd, 10);
     if(ret < 0)
     {
         printf("TcpServer listen init error\n");
+        close(sockfd);
         return false;
     }
     //create Epoll
@@ -85,6 +87,7 @@ bool TcpServer::init(unsigned short svrport,ptcpFun callback,pNotifyFun notifyca
     if(epollfd < 0)
     {
         printf("TcpServer epoll_create init error\n");
+        close(sockfd);
         return false;
     }
 	//printf("TcpServer init success.\n");
@@ -97,6 +100,7 @@ bool TcpServer::startpool()
 	if(NULL == pool)
 	{
 		//printf("pool=NULL.\n");
+		close(sockfd);
 		return false;
 	}
     pool->start();   //线程池启动
@@ -109,7 +113,7 @@ void TcpServer::addclienttime(int fd,const char* clientinfo)
 	string client  = clientinfo;
 	activeconnectmaplocker.mutex_lock();
 	m_activeclient.insert(pair<int,unsigned long>(fd,timestamp));
-	m_connecttime.insert(pair<int,unsigned int>(fd,timestamp));
+	m_connecttime.insert(pair<int,unsigned long>(fd,timestamp));
 	m_clientinfo.insert(pair<int,string>(fd,client));
 	activeconnectmaplocker.mutex_unlock();	
 }
@@ -122,7 +126,7 @@ void TcpServer::removeclienttime(int fd)
 	{
 		m_activeclient.erase(iter);
 	}
-	map<int,unsigned int>::iterator iter1;
+	map<int,unsigned long>::iterator iter1;
 	iter1 = m_connecttime.find(fd);
 	if(iter1 != m_connecttime.end())
 	{
@@ -144,7 +148,7 @@ void TcpServer::clearclienttime()
 	{
 		m_activeclient.erase(iter++);
 	}
-	map<int,unsigned int>::iterator iter1;
+	map<int,unsigned long>::iterator iter1;
 	for(iter1=m_connecttime.begin();iter1!=m_connecttime.end();)
 	{
 		m_connecttime.erase(iter1++);
@@ -380,4 +384,18 @@ int  TcpServer::senddata(int fd,const char *data,int datalen)
 	{
 		return -1;
 	}
+}
+
+unsigned long TcpServer::getclienttime(int fd)
+{
+	unsigned long timestamp = 0;
+	activeconnectmaplocker.mutex_lock();
+	map<int,unsigned long>::iterator iter;
+	iter = m_activeclient.find(fd);
+	if(iter != m_activeclient.end())
+	{
+		timestamp = m_activeclient[fd];
+	}
+	activeconnectmaplocker.mutex_unlock();
+	return timestamp;
 }

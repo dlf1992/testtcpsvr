@@ -90,3 +90,28 @@ int StartTCPService(unsigned short svrport,ptcpFun Callback,pNotifyFun notifyCal
 	}
 	return 0;
 }
+unsigned long GetTCPClientTime(unsigned short svrport,int fd)
+{
+	TcpServer *ptcpserver = NULL;
+	unsigned long timestamp;
+	ptcpserver = findptr(svrport);
+	if(NULL == ptcpserver)
+	{
+		printf("ptcpserver == NULL.\n");
+		return 0;
+	}
+	timestamp = ptcpserver->getclienttime(fd);
+	return timestamp;
+}
+void DisconnectClient(unsigned short svrport,int fd)
+{
+	TcpServer *ptcpserver = NULL;
+	ptcpserver = findptr(svrport);
+	if(NULL == ptcpserver)
+	{
+		printf("ptcpserver == NULL.\n");
+		return;
+	}
+	ptcpserver->disconnect(fd);
+}
+
