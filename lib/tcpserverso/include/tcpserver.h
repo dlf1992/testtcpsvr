@@ -81,7 +81,7 @@ public://构造函数
 			delete pclient_buffer;
 			pclient_buffer = NULL;
 		}
-		printf("Deconstruction success.\n");
+		//printf("Deconstruction success.\n");
 	}
 	bool init(unsigned short svrport,ptcpFun callback,pNotifyFun notifycallback,pReadPacketFun readpacket);
 	void epoll();
@@ -103,19 +103,30 @@ public://构造函数
 		return old_option;
 	}
  
-	static void addfd(int epollfd, int sockfd, bool oneshot)  //向Epoll中添加fd
+	static void addfd(int epoll_fd, int socketfd, bool oneshot)  //向Epoll中添加fd
 	{//oneshot表示是否设置称同一时刻，只能有一个线程访问fd，数据的读取都在主线程中，所以调用都设置成false
 		epoll_event event;
 		memset(&event,0,sizeof(event));
-		event.data.fd = sockfd;
+		event.data.fd = socketfd;
 		event.events = EPOLLIN;//| EPOLLET;
 		if(oneshot)
 		{
 			event.events |= EPOLLONESHOT;
 		}
-		epoll_ctl(epollfd, EPOLL_CTL_ADD, sockfd, &event); //添加fd
-		TcpServer::setnonblocking(sockfd);
+		epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socketfd, &event); //添加fd
+		TcpServer::setnonblocking(socketfd);
 	}
- 
+	static void addfdext(int epoll_fd, int socketfd, bool oneshot)  //向Epoll中添加fd
+	{//oneshot表示是否设置称同一时刻，只能有一个线程访问fd，数据的读取都在主线程中，所以调用都设置成false
+		epoll_event event;
+		memset(&event,0,sizeof(event));
+		event.data.fd = socketfd;
+		event.events = EPOLLIN;//| EPOLLET;
+		if(oneshot)
+		{
+			event.events |= EPOLLONESHOT;
+		}
+		epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socketfd, &event); //添加fd
+	} 
 };
 #endif

@@ -24,6 +24,7 @@ void Task::processtask(CientBuffer *pclientbuffer,char *buffer,int buflen,int fd
 		return;
 	}
 	char szPacket[2048];
+	memset(szPacket,0,sizeof(szPacket));
 	int iPacketlen = 0;
 
 	TRingBuffer *pbuffer = NULL;

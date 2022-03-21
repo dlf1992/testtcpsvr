@@ -12,8 +12,13 @@
 
 CientBuffer::CientBuffer(unsigned short port):tcp_port(port)
 {
-	pTRingBuffer[MAX_RingBuffer] = {NULL};
-	pClientlocker[MAX_RingBuffer] = {NULL};
+	//pTRingBuffer[MAX_RingBuffer] = {NULL};
+	//pClientlocker[MAX_RingBuffer] = {NULL};
+	for(int i=0;i<MAX_RingBuffer;i++)
+	{
+		pTRingBuffer[i] = NULL;
+		pClientlocker[i] = NULL;
+	}
 	map_TRingBuffer.clear();
 	map_Clientlocker.clear();
 	task_callback = NULL;

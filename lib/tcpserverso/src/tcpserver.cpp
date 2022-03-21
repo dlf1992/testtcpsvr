@@ -17,7 +17,7 @@ bool TcpServer::init(unsigned short svrport,ptcpFun callback,pNotifyFun notifyca
 	pclient_buffer = new CientBuffer(m_port);
 	if(NULL == pclient_buffer)
 	{
-		printf("pclient_buffer NULL,CientBuffer new failed.\n");
+		//printf("pclient_buffer NULL,CientBuffer new failed.\n");
 		return false;
 	}
 	pclient_buffer->task_callback = callback;
@@ -31,13 +31,29 @@ bool TcpServer::init(unsigned short svrport,ptcpFun callback,pNotifyFun notifyca
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if(sockfd < 0)
     {
-        printf("TcpServer socket init error\n");
+        //printf("TcpServer socket init error\n");
         return false;
     }
     int opt = 1;
     // sockfd为需要端口复用的套接字
-    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (const void *)&opt, sizeof(opt));
+    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (const void *)&opt, (socklen_t)sizeof(opt));
 
+	//获取发送缓冲区
+    int sendbuf_len;
+    int len = sizeof(sendbuf_len);
+    if(getsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, (void *)&sendbuf_len, (socklen_t*)&len) < 0)
+	{
+        //printf("getsockopt: error\n");
+        return false;
+    }
+	//printf("sendbuf_len = %d\n",sendbuf_len);
+	//设置发送缓冲区
+	sendbuf_len *= 2;  //发送缓冲区翻倍，实际缓冲区大小的一半
+	if(setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, (void *)&sendbuf_len, (socklen_t)len) < 0)
+	{
+        //printf("setsockopt:error\n");
+        return false;
+    }
 	int keepAlive = 1;	  // 非0值，开启keepalive属性
 	int keepIdle = 60;	  // 如该连接在60秒内没有任何数据往来,则进行此TCP层的探测
 	int keepInterval = 5; // 探测发包间隔为5秒
@@ -46,7 +62,7 @@ bool TcpServer::init(unsigned short svrport,ptcpFun callback,pNotifyFun notifyca
 	
 	if(-1 == setsockopt(sockfd, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepAlive, sizeof(keepAlive)))
 	{
-		printf("set socket KEEPALIVE error.\n");
+		//printf("set socket KEEPALIVE error.\n");
 		close(sockfd);
 		return false;
 	}
@@ -58,27 +74,27 @@ bool TcpServer::init(unsigned short svrport,ptcpFun callback,pNotifyFun notifyca
 	}
 	if(-1 == setsockopt(sockfd, SOL_TCP, TCP_KEEPINTVL, (void *)&keepInterval, sizeof(keepInterval)))
 	{
-		printf("set socket KEEPINTVL error.\n");
+		//printf("set socket KEEPINTVL error.\n");
 		close(sockfd);
 		return false;		
 	}
 	if(-1 == setsockopt(sockfd, SOL_TCP, TCP_KEEPCNT, (void *)&keepCount, sizeof(keepCount)))
 	{
-		printf("set socket KEEPCNT error.\n");
+		//printf("set socket KEEPCNT error.\n");
 		close(sockfd);
 		return false;
 	}	
     int ret = bind(sockfd, (struct sockaddr *)&ServerAddr, sizeof(ServerAddr));
     if(ret < 0)
     {
-        printf("TcpServer bind init error\n");
+        //printf("TcpServer bind init error\n");
         close(sockfd);
         return false;
     }
     ret = listen(sockfd, 10);
     if(ret < 0)
     {
-        printf("TcpServer listen init error\n");
+        //printf("TcpServer listen init error\n");
         close(sockfd);
         return false;
     }
@@ -86,7 +102,7 @@ bool TcpServer::init(unsigned short svrport,ptcpFun callback,pNotifyFun notifyca
     epollfd = epoll_create(1024);
     if(epollfd < 0)
     {
-        printf("TcpServer epoll_create init error\n");
+        //printf("TcpServer epoll_create init error\n");
         close(sockfd);
         return false;
     }
@@ -206,7 +222,7 @@ void TcpServer::epoll()
             int fd = events[i].data.fd;
             if(fd == sockfd)  //新的连接到来
             {
-				printf("new client connect.\n");
+				//printf("new client connect.\n");
                 struct sockaddr_in clientAddr;
                 socklen_t len = sizeof(clientAddr);
                 int confd = accept(sockfd, (struct sockaddr *)
@@ -216,7 +232,7 @@ void TcpServer::epoll()
                 char str[INET_ADDRSTRLEN];   //INET_ADDRSTRLEN这个宏系统默认定义 16
                 //成功的话此时IP地址保存在str字符串中。
                 inet_ntop(AF_INET,&in, str, sizeof(str));
-                printf("client ip:port  %s : %d,confd: %d\n",str,port,confd);
+                //printf("client ip:port  %s : %d,confd: %d\n",str,port,confd);
                 //printf("client confd: %d\n",confd);
 				if(confd == -1)
 				{
@@ -235,7 +251,14 @@ void TcpServer::epoll()
 					memcpy(notifydata,&m_eventnotify,sizeof(EVENTNOTIFY));
 					m_notifyfunc(notifydata,sizeof(EVENTNOTIFY));
 				}
-                addfd(epollfd, confd, false);
+				if(m_port == 48003)
+				{
+					addfdext(epollfd, confd, false);
+				}
+				else
+				{
+                	addfd(epollfd, confd, false);
+				}
             }
             else if(events[i].events & EPOLLIN)  //某个fd上有数据可读
             {
@@ -250,7 +273,7 @@ void TcpServer::epoll()
                     epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, &ev);
                     shutdown(fd, SHUT_RDWR);
 					close(fd);
-                    printf("%d logout\n", fd);
+                    //printf("%d logout\n", fd);
 					removeclienttime(fd);
 					if(m_notifyfunc != NULL)
 					{
@@ -267,7 +290,7 @@ void TcpServer::epoll()
 					}
 					else
 					{
-						printf("clear fd,pclient_buffer = NULL\n");
+						//printf("clear fd,pclient_buffer = NULL\n");
 					}
                     continue;
                 }
@@ -295,7 +318,7 @@ void TcpServer::epoll()
 					BaseTask *task = NULL;
 					if(NULL == pclient_buffer)
 					{
-						printf("add task,pclient_buffer = NULL\n");
+						//printf("add task,pclient_buffer = NULL\n");
 						break;
 					}
                     task = new Task(pclient_buffer,buffer,ret1,fd);

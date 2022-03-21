@@ -21,7 +21,7 @@ TcpServer *findptr(unsigned short port)
 	}
 	else
 	{
-		printf("not found port\n");				
+		//printf("not found port\n");				
 	}	
 	svr_locker.mutex_unlock();
 	return ptcpsvr;
@@ -41,7 +41,7 @@ void clearptr(unsigned short port)
 	iter = svr_map.find(port);
 	if(iter != svr_map.end())
 	{
-		printf("svraddr exist\n");
+		//printf("svraddr exist\n");
 		ptcpsvr = iter->second;
 		//printf("pfac = %p\n",pfac);
 		svr_map.erase(iter);
@@ -54,7 +54,7 @@ void clearptr(unsigned short port)
 	}
 	else
 	{
-		printf("not found port\n");			
+		//printf("not found port\n");			
 	}	
 	svr_locker.mutex_unlock();	
 }
@@ -70,7 +70,7 @@ int StartTCPService(unsigned short svrport,ptcpFun Callback,pNotifyFun notifyCal
 	}
 	if(NULL == ptcpserver)
 	{
-		printf("TcpServer new failed.\n");
+		//printf("TcpServer new failed.\n");
 		return -1;
 	}
 	insertptr(svrport,ptcpserver);
@@ -83,7 +83,7 @@ int StartTCPService(unsigned short svrport,ptcpFun Callback,pNotifyFun notifyCal
 	}
 	else
 	{
-		printf("TcpServer init failed.\n");
+		//printf("TcpServer init failed.\n");
 		clearptr(svrport);
 		ptcpserver = NULL;
 		return -1;		
@@ -97,7 +97,7 @@ unsigned long GetTCPClientTime(unsigned short svrport,int fd)
 	ptcpserver = findptr(svrport);
 	if(NULL == ptcpserver)
 	{
-		printf("ptcpserver == NULL.\n");
+		//printf("ptcpserver == NULL.\n");
 		return 0;
 	}
 	timestamp = ptcpserver->getclienttime(fd);
@@ -109,7 +109,7 @@ void DisconnectClient(unsigned short svrport,int fd)
 	ptcpserver = findptr(svrport);
 	if(NULL == ptcpserver)
 	{
-		printf("ptcpserver == NULL.\n");
+		//printf("ptcpserver == NULL.\n");
 		return;
 	}
 	ptcpserver->disconnect(fd);
